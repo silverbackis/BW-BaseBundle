@@ -4,15 +4,14 @@
         <title>{% block title %}{{ bwbase_title() }}{% endblock %}</title>
         {{ sonata_seo_link_canonical() }}
         {{ sonata_seo_lang_alternates() }}
-        {{ bwbase_meta_tags() }}
-        {{ bwbase_link_tags() }}
-        {{ bwbase_sdks_html('head') }}
+        {% block metas %}{{ bwbase_meta_tags() }}{% endblock %}
+        {% block link_tags %}{{ bwbase_link_tags() }}{% endblock %}
+        {% block js_sdk_head %}{{ bwbase_sdks_html('head') }}{% endblock %}
         {% block stylesheets %}{% endblock %}
     </head>
     <body>
-        {{ bwbase_sdks_html('body') }}
+        {% block js_sdk_body %}{{ bwbase_sdks_html('body') }}{% endblock %}
         {% block body %}{% endblock %}
-        
         {% block javascripts %}{% endblock %}
     </body>
 </html>
