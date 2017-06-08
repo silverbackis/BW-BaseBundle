@@ -1,0 +1,42 @@
+bw_base:
+  page:
+    metas:
+      name:
+        twitter:site:       '@silverbackis'
+        twitter:image:      '%opengraph_base%opengraph_image1.png'
+        twitter:title:      'auto' #get from title tag
+        twitter:description: 'auto'  #get from meta description
+      property:
+        - { property: "og:title", content: "auto" }  #get from title tag
+        - { property: "og:description", content: "auto" }  #get from meta description
+        - { property: "og:url", content: "auto" }  #get from current URL
+        - { property: "og:image", content: "%opengraph_base%opengraph_image1.png" }
+        - { property: "og:image:width", content: "500" }
+        - { property: "og:image:height", content: "500" }
+        - { property: "og:image", content: "%opengraph_base%opengraph_image2.png" }
+    links:
+      rel:
+        apple-touch-icon-precomposed:
+          - { sizes: 57x57, href: '%favicon_base%apple-touch-icon-57x57.png' }
+        icon:
+          - { type: image/png, sizes: 196x196, href: '%favicon_base%favicon-196x196.png' }
+    js_sdk:
+      google_analytics:
+        enabled: true
+        id: UA-12345678-01
+        domain: www.yourdomain.com
+      woopra:
+        enabled: true
+        domain: www.yourdomain.com
+      facebook_pixel:
+        enabled: true
+        id: pixelID
+      facebook:
+        enabled: true
+        app_id: 1234567890
+        xfbml: true
+        version: 'v2.8'
+        language: en_GB
+        login_status_check: false
+        debug: false
+      twitter: true

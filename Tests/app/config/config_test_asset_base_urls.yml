@@ -1,0 +1,8 @@
+imports:
+  - { resource: 'config.yml' }
+  - { resource: 'config_bw_base.yml' }
+  
+framework:
+  assets:
+    base_urls:
+      - 'http://cdn.b-w.uk/'

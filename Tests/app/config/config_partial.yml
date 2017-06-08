@@ -1,0 +1,6 @@
+imports:
+  - { resource: 'config.yml' }
+
+bw_base:
+  page:
+    links:

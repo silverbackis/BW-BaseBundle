@@ -1,0 +1,36 @@
+{
+    "name": "silverbackis/bw-base-bundle",
+    "license": "Apache-2.0",
+    "type": "symfony-bundle",
+    "description": "A Symfony 3 Bundle to be used with British Websites creations. Extends Sonata SEO Bundle and provides functionality to configure link tags (for icons) and some common Javascript SDK Inclusions",
+    "homepage": "https://github.com/silverbackis/BW-BaseBundle",
+    "keywords": ["symfony", "bw", "britishwebsites", "base", "icons", "favicons", "sdk", "sonta"],
+    "authors": [
+        {
+            "name": "Daniel West",
+            "email": "daniel@silverback.is",
+            "homepage": "https://silverback.is"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "BW\\BaseBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "BW\\BaseBundle\\Tests\\": "Tests/"
+        }
+    },
+    "require": {
+        "php": ">=5.5.9",
+        "symfony/symfony": "3.2.*",
+        "sonata-project/seo-bundle" : "^2.0"
+    },
+    "require-dev": {
+        "symfony/phpunit-bridge": "^3.0"
+    },
+    "extra": {
+        "dev-master": "1.x-dev"
+    }
+}

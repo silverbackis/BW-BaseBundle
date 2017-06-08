@@ -1,0 +1,4 @@
+services:
+  bw.base.page:
+    class: BW\BaseBundle\BasePage
+    arguments: ["@sonata.seo.page", "@request_stack", "@assets.packages"]

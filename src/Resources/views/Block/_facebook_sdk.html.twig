@@ -1,0 +1,23 @@
+{% block facebook_sdk %}
+{% spaceless %}
+  <div id="fb-root"></div>
+  <script id="sdk_facebook">
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : '{{ app_id }}',
+        xfbml      : {{ xfbml }},
+        version    : '{{ version }}',
+        status     : '{{ status }}'
+      });
+      FB.AppEvents.logPageView();
+    };
+    (function(d, s, id){
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) {return;}
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/{{ language }}/{{ js_script }}";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+  </script>
+{% endspaceless %}
+{% endblock %}

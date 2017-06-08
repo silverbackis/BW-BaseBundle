@@ -1,0 +1,15 @@
+framework:
+  secret:   test
+  router:   { resource: "%kernel.root_dir%/config/routing.yml" }
+  test:     ~
+  assets:   true
+
+sonata_seo:
+  page:
+    title: Testing Page Title
+    metas:
+      name:
+        robots: index, follow  
+        description: test description
+      example:
+        jim: bob

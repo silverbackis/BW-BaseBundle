@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html {{ sonata_seo_html_attributes() }}>
+    <head {{ sonata_seo_head_attributes() }}>
+        <title>{% block title %}{{ bwbase_title() }}{% endblock %}</title>
+        {{ sonata_seo_link_canonical() }}
+        {{ sonata_seo_lang_alternates() }}
+        {{ bwbase_meta_tags() }}
+        {{ bwbase_link_tags() }}
+        {{ bwbase_sdks_html('head') }}
+        {% block stylesheets %}{% endblock %}
+    </head>
+    <body>
+        {{ bwbase_sdks_html('body') }}
+        {% block body %}{% endblock %}
+        
+        {% block javascripts %}{% endblock %}
+    </body>
+</html>
