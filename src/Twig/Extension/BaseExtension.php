@@ -198,30 +198,27 @@ class BaseExtension extends SeoExtension
                 } else {
                     list($name, $content) = $meta;
                 }
-
-                if (!is_string($content)) {
-                    dump($meta);
-                    die(dump($content));
-                }
-
-                foreach ($assetPostfixes as $assetPostfix) {
-                    if (substr($name, strlen($assetPostfix) * -1) === $assetPostfix) {
-                        $content = $this->BWBase->getUrl($content);
-                        break;
+                if( null !== $content )
+                {
+                    foreach ($assetPostfixes as $assetPostfix) {
+                        if (substr($name, strlen($assetPostfix) * -1) === $assetPostfix) {
+                            $content = $this->BWBase->getUrl($content);
+                            break;
+                        }
                     }
-                }
 
-                if (!empty($content)) {
-                    $html .= "<meta ".sprintf("%s=\"%s\" content=\"%s\"",
-                        $type,
-                        $this->normalize($name),
-                        $this->normalize($content)
-                    )." />\n";
-                } else {
-                    $html .= "<meta ".sprintf("%s=\"%s\"",
-                        $type,
-                        $this->normalize($name)
-                    )." />\n";
+                    if (!empty($content)) {
+                        $html .= "<meta ".sprintf("%s=\"%s\" content=\"%s\"",
+                                $type,
+                                $this->normalize($name),
+                                $this->normalize($content)
+                            )." />\n";
+                    } else {
+                        $html .= "<meta ".sprintf("%s=\"%s\"",
+                                $type,
+                                $this->normalize($name)
+                            )." />\n";
+                    }
                 }
             }
         }
