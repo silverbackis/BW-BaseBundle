@@ -1,247 +1,410 @@
 <?php
 
-namespace BW\BaseBundle\Twig\Extension;
+namespace BW\BaseBundle;
 
-use Sonata\SeoBundle\Twig\Extension\SeoExtension;
-use BW\BaseBundle\BWBaseInterface;
-use Sonata\SeoBundle\Seo\SeoPageInterface;
+use Sonata\SeoBundle\Seo\SeoPage;
+use Symfony\Component\Asset\Packages;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Asset\PackageInterface;
 
-class BaseExtension extends SeoExtension
+class BasePage extends SeoPage implements BWBaseInterface
 {
     /**
-     * @var SeoPageInterface
+     * @var SeoPage
      */
-    protected $page;
+    protected $SonataSeoPage;
 
     /**
-     * @var BWBaseInterface
+     * @var  string
      */
-    protected $BWBase;
+    protected $baseURL = null;
 
     /**
-     * BaseExtension constructor.
-     * @param SeoPageInterface $page
-     * @param string $encoding
-     * @param BWBaseInterface $BWBase
+     * @var PackageInterface
      */
-    public function __construct(SeoPageInterface $page, $encoding, BWBaseInterface $BWBase)
-    {
-        $this->page = $page;
-        $this->encoding = $encoding;
-        $this->BWBase = $BWBase;
-    }
-
-    public function getFunctions()
-    {
-        $parentFunctions = parent::getFunctions();
-        return array_merge($parentFunctions, array(
-            new \Twig_SimpleFunction('bwbase_link_tags', array($this, 'getLinkTags'), [
-                'is_safe' => ['html']
-            ]),
-            new \Twig_SimpleFunction('bwbase_sdks_html', array($this, 'getSDKHtml'), [
-                'is_safe' => ['html'],
-                'needs_environment' => true
-            ]),
-            new \Twig_SimpleFunction('bwbase_meta_tags', array($this, 'getMetaTags'), [
-                'is_safe' => ['html']
-            ]),
-            new \Twig_SimpleFunction('bwbase_metas', array($this, 'getMetas'), [
-                'is_safe' => ['html']
-            ]),
-            new \Twig_SimpleFunction('bwbase_title', array($this, 'getPlainTitle'), [
-                'is_safe' => ['html']
-            ]),
-
-            new \Twig_SimpleFunction('bwbase_links', array($this->BWBase, 'getLinks')),
-            new \Twig_SimpleFunction('bwbase_sdks', array($this->BWBase, 'getSDKs')),
-            new \Twig_SimpleFunction('bwbase_prccess_auto_content', array($this->BWBase, 'processAutoContent')),
-            new \Twig_SimpleFunction('bwbase_add_meta', array($this->BWBase, 'addMeta')),
-            new \Twig_SimpleFunction('bwbase_remove_meta', array($this->BWBase, 'removeMeta')),
-            new \Twig_SimpleFunction('bwbase_replace_meta', array($this->BWBase, 'replaceMeta')),
-            new \Twig_SimpleFunction('bwbase_remove_meta_by_key', array($this->BWBase, 'removeMetaByKey')),
-            new \Twig_SimpleFunction('bwbase_set_sdks', array($this->BWBase, 'setSDKs')),
-            new \Twig_SimpleFunction('bwbase_has_sdk', array($this->BWBase, 'hasSDK')),
-            new \Twig_SimpleFunction('bwbase_get_sdk', array($this->BWBase, 'getSDK')),
-            new \Twig_SimpleFunction('bwbase_enable_sdk', array($this->BWBase, 'enableSDK')),
-            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'disableSDK')),
-            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'setLinks')),
-            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'hasLink')),
-            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'addLink')),
-            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'removeLink')),
-            new \Twig_SimpleFunction('bwbase_get_url', array($this->BWBase, 'getUrl'))
-        ));
-    }
-
-    public function getName()
-    {
-        return 'bw.base.twig';
-    }
+    protected $defaultPackage;
 
     /**
-     * @return array
+     * @var RequestStack
      */
+    protected $requestStack;
+
+    /**
+     * Array of metas that can be auto generated
+     */
+    const AUTOMETAS = [
+        'name' => [
+            'twitter:title',
+            'twitter:description'
+        ],
+        'property' => [
+            'og:title',
+            'og:description',
+            'og:url'
+        ]
+    ];
+
+    private $autometas = [];
+
+    public function __construct(SeoPage $SonataSeoPage, RequestStack $requestStack, Packages $packages){
+        $this->SonataSeoPage = $SonataSeoPage;
+        /**
+         * @var PackageInterface
+         */
+        $this->defaultPackage = $packages->getPackage();
+        $this->requestStack = $requestStack;
+    }
+    /**
+     * @var array
+     */
+    protected $links,
+        $sdks;
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setMetas(array $metadatas)
+    {
+        foreach( $metadatas as $mainAttr => &$valueArr )
+        {
+            foreach( $valueArr as $valueKey => &$valueAttrs )
+            {
+                if( isset($valueAttrs['{{ master_key }}']) && $valueAttrs['{{ master_key }}'] === '{{ key }}' )
+                {
+                    unset($valueAttrs['{{ master_key }}']);
+                    $valueAttrs[$mainAttr] = $valueKey;
+                }
+                // e.g. property/name
+                $type = $mainAttr;
+                // e.g. og:image
+                $name = $valueAttrs[$mainAttr];
+                $content = $valueAttrs['content'];
+                $extras = isset($valueAttrs['extras']) ? $valueAttrs['extras'] : [];
+                $this->addMeta($type, $name, $content, $extras);
+            }
+        }
+    }
+
     public function getMetas()
     {
-        $sonataSeoMetas = $this->page->getMetas();
-        $BWBaseMetas = $this->BWBase->getMetas();
-        foreach ($sonataSeoMetas as $type => $metas) {
-            if (!isset($BWBaseMetas[$type])) {
-                $BWBaseMetas[$type] = [];
-            }
-
-            foreach ((array)$metas as $name => $meta) {
-                $BWBaseMetas[$type][] = array($name, $meta[0], $meta[1]);
-            }
-        }
-
-        return $BWBaseMetas;
+        $this->processAutoContent();
+        return parent::getMetas();
     }
 
-    /**
-     * @return string (HTML tags)
-     */
-    public function getLinkTags()
+    public function processAutoContent()
     {
-        $html = '';
-        foreach ($this->BWBase->getLinks() as $type => $links) {
-            foreach ((array)$links as $name => $linksSet) {
-                //list($content, $extras) = $link;
-                foreach ($linksSet as $link) {
-                    $sprintfArr = array(
-                        $this->normalize($type),
-                        $this->normalize($name)
-                    );
-                    $sprintfArgs = str_repeat(" %s=\"%s\"", sizeof($link));
-                    foreach ($link as $attr => $val) {
-                        $sprintfArr[] = $this->normalize($attr);
-                        if ($attr === 'href') {
-                            $val = $this->BWBase->getUrl($val);
-                        }
-                        $sprintfArr[] = $this->normalize($val);
-                    }
-
-                    $html .= "<link ".vsprintf("%s=\"%s\"", $sprintfArr)." $sprintfArgs />\n";
-                }
-
-            }
+        if(null === $this->metas)
+        {
+            return;
         }
+        foreach( $this->metas as $type=>&$metaArr )
+        {
+            //ie($type.var_dump($metaArr));
+            foreach($metaArr as &$metaInfo)
+            {
+                $name = $metaInfo[0];
+                $content = $metaInfo[1];
 
-        return $html;
-    }
-
-    /**
-     * @return string (HTML)
-     */
-    public function getSDKHtml(\Twig_Environment $environment, string $pageSection)
-    {
-        $html = "";
-        foreach ($this->BWBase->getSDKs($pageSection) as $sdkName => $sdkInfo) {
-            switch ($sdkName) {
-                case "twitter":
-                    $html .= $environment->render('@BWBase/Block/_twitter_sdk.html.twig', []);
-                    break;
-
-                case "facebook":
-                    $js_script = $sdkInfo['debug'] ? 'debug.js' : 'sdk.js';
-                    $html .= $environment->render('@BWBase/Block/_facebook_sdk.html.twig', [
-                        'app_id' => $sdkInfo['app_id'],
-                        'xfbml' => $sdkInfo['xfbml'],
-                        'version' => $sdkInfo['version'],
-                        'status' => $sdkInfo['login_status_check'] ? "true" : "false",
-                        'language' => $sdkInfo['language'],
-                        'js_script' => $js_script
-                    ]);
-                    break;
-
-                case "google_analytics":
-                    $html .= $environment->render('@BWBase/Block/_google_analytics_sdk.html.twig', [
-                        'id' => $sdkInfo['id'],
-                        'domain' => $sdkInfo['domain']
-                    ]);
-                    break;
-
-                case "woopra":
-                    $html .= $environment->render('@BWBase/Block/_woopra_sdk.html.twig', [
-                        'domain' => $sdkInfo['domain']
-                    ]);
-                    break;
-
-                case "facebook_pixel":
-                    $html .= $environment->render('@BWBase/Block/_facebook_pixel_sdk.html.twig', [
-                        'id' => $sdkInfo['id']
-                    ]);
-                    break;
-
-                default:
-                    $html .= '<script>console.warn("' . $sdkName . ' has no code configured for the twig extension `BaseExtension` using getSDKs");</script>';
-                    break;
-            }
-        }
-        return $html;
-    }
-
-    /**
-     * {@inheriteddoc}
-     * @return string (HTML tags)
-     */
-    public function getMetaTags()
-    {
-        $assetPostfixes = array(":image", "TileImage", "logo", ":audio", ":secure_url");
-        $allMetas = $this->getMetas();
-        $html = '';
-        foreach ($allMetas as $type => $metas) {
-            foreach ((array)$metas as $key => $meta) {
-                // Support Sonata SEO which has 2 items in array - only 1 twig function to call then for all meta tags
-                if (sizeof($meta) === 2) {
-                    $name = $key;
-                    list($content) = $meta;
-                } else {
-                    list($name, $content) = $meta;
-                }
-                if(null !== $content)
+                if( isset(self::AUTOMETAS[$type]) && in_array($name, self::AUTOMETAS[$type]) && ($content === 'auto' || in_array($type, $this->autometas)) )
                 {
-                    foreach ($assetPostfixes as $assetPostfix) {
-                        if (substr($name, strlen($assetPostfix) * -1) === $assetPostfix) {
-                            $content = $this->BWBase->getUrl($content);
-                            break;
-                        }
-                    }
+                    $this->autometas[] = $type;
 
-                    if (!empty($content)) {
-                        $html .= "<meta ".sprintf("%s=\"%s\" content=\"%s\"",
-                                $type,
-                                $this->normalize($name),
-                                $this->normalize($content)
-                            )." />\n";
-                    } else {
-                        $html .= "<meta ".sprintf("%s=\"%s\"",
-                                $type,
-                                $this->normalize($name)
-                            )." />\n";
+                    $chk_title = ':title';
+                    $chk_description = ':description';
+                    $chk_url = ':url';
+                    if( substr($name, strlen($chk_title)*-1) === $chk_title )
+                    {
+                        $content = $this->SonataSeoPage->getTitle();
                     }
+                    elseif( substr($name, strlen($chk_description)*-1) === $chk_description )
+                    {
+                        $content = $this->getDescription();
+                    }
+                    elseif( substr($name, strlen($chk_url)*-1) === $chk_url )
+                    {
+                        $request = $this->requestStack->getCurrentRequest();
+                        $content = $request ? $request->getUri() : 'http://localhost/';
+                    }
+                    $metaInfo = [$name, $content, []];
                 }
             }
         }
-        return $html;
     }
 
     /**
-     * Function used to normalise strings inserted into HTML tags
-     * @param string $string
+     * {@inheritdoc}
+     */
+    public function addMeta($type, $name, $content, array $extras = array())
+    {
+        if (!isset($this->metas[$type])) {
+            $this->metas[$type] = array();
+        }
+        if( isset(self::AUTOMETAS[$type]) && in_array($name, self::AUTOMETAS[$type]) && ($content === 'auto' || in_array($type, $this->autometas)) )
+        {
+            $this->autometas[] = $type;
+            $chk_title = ':title';
+            $chk_description = ':description';
+            $chk_url = ':url';
+            if( substr($name, strlen($chk_title)*-1) === $chk_title )
+            {
+                $content = $this->SonataSeoPage->getTitle();
+            }
+            elseif( substr($name, strlen($chk_description)*-1) === $chk_description )
+            {
+                $content = $this->getDescription();
+            }
+            elseif( substr($name, strlen($chk_url)*-1) === $chk_url )
+            {
+                $request = $this->requestStack->getCurrentRequest();
+                $content = $request ? $request->getUri() : 'http://localhost/';
+            }
+        }
+
+        $this->metas[$type][] = array($name, $content, $extras);
+    }
+
+    /**
+     * @param string $type
+     * @param string $name
      *
-     * @return mixed
+     * @return bool
      */
-    private function normalize(string $string)
+    public function hasMeta($type, $name)
     {
-        return htmlentities(strip_tags($string), ENT_QUOTES, $this->encoding);
+        $isset = false;
+        foreach( $this->metas[$type] as $metaArr )
+        {
+            if( $metaArr[0] === $name )
+            {
+                $isset = true;
+                break;
+            }
+        }
+        return $isset;
     }
 
+    /**
+     * @param string $type
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function getMeta($type, $name)
+    {
+        foreach( $this->metas[$type] as $metaArr )
+        {
+            if( $metaArr[0] === $name )
+            {
+                return $metaArr;
+            }
+        }
+        return false;
+    }
 
     /**
-     * @return string
+     * @param string $type
+     * @param string $name
      */
-    public function getPlainTitle()
+    public function removeMeta($type, $name)
     {
-        return sprintf('%s', strip_tags($this->page->getTitle()));
+        foreach( $this->metas[$type] as $key=>$metaArr )
+        {
+            if( $metaArr[0] === $name )
+            {
+                unset($this->metas[$type][$key]);
+            }
+        }
+    }
+
+    public function replaceMeta($type, $name, $content, array $extras = array())
+    {
+        if($this->hasMeta($type, $name))
+        {
+            $this->removeMeta($type, $name);
+        }
+        $this->addMeta($type, $name, $content, $extras);
+    }
+
+    /**
+     * @param string $type
+     * @param integer $key
+     */
+    public function removeMetaByKey($type, $key)
+    {
+        unset($this->metas[$type][$key]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setSDKs(array $sdks)
+    {
+        $this->sdks = $sdks;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSDKs(string $bodyPart=null)
+    {
+        return array_filter($this->sdks,function($arr) use ($bodyPart){
+            $matchPart = $arr['head'] ? 'head' : 'body';
+            return $arr['enabled'] && (null === $bodyPart || $bodyPart === $matchPart);
+        });
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function hasSDK($name)
+    {
+        return $this->sdks[$name]['enabled'];
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function getSDK($name)
+    {
+        return $this->sdks[$name];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function enableSDK($name)
+    {
+        if (!isset($this->sdks[$name])) {
+            return;
+        }
+
+        $this->sdks[$name]['enabled'] = true;
+    }
+
+    /**
+     * @param string $name
+     */
+    public function disableSDK($name)
+    {
+        $this->sdks[$name]['enabled'] = false;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setLinks(array $linkdatas)
+    {
+        $this->links = array();
+
+        foreach ($linkdatas as $type => $links) {
+            if (!is_array($links)) {
+                throw new \RuntimeException('$links must be an array');
+            }
+            foreach ($links as $name => $link) {
+                $this->addLink($type, $name, $link);
+            }
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getLinks()
+    {
+        return $this->links;
+    }
+
+    /**
+     * @param string $type
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function hasLink($type, $name)
+    {
+        return isset($this->links[$type][$name]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function addLink($type, $name, $content)
+    {
+        if (!isset($this->links[$type])) {
+            $this->links[$type] = array();
+        }
+
+        $this->links[$type][$name] = $content;
+    }
+
+    /**
+     * @param string $type
+     * @param string $name
+     */
+    public function removeLink($type, $name)
+    {
+        unset($this->links[$type][$name]);
+    }
+
+    /**
+     * [getUrl description]
+     * @param  string $url path to convert to absolute URL for tags
+     * @return string      absolute url suitable for tags
+     */
+    public function getUrl(string $url)
+    {
+        // Check if we have a sheme already in the path - meaning it's a URL
+        if( substr($url, 0, 2)!=='//' &&  parse_url($url, PHP_URL_SCHEME) === null)
+        {
+            // Add base URL path if not
+            $this->setBaseUrl();
+            $url = $this->baseURL.$url;
+        }
+        return $url;
+    }
+
+    /**
+     * Sets $this->baseURL - either the specified base_url for assets or the current http scheme, host and port
+     */
+    private function setBaseUrl()
+    {
+        // Only set the base URL if not set already
+        if(null === $this->baseURL)
+        {
+            // Check if base_url is already set for assets in the config - e.g. a CDN
+            $this->baseURL = $this->defaultPackage->getUrl('');
+
+            // Check if path is missing scheme and host
+            if( $this->baseURL === '/' )
+            {
+                // These assets need to be referred to with absolute path
+                // Get the current request
+                $request = $this->requestStack->getCurrentRequest();
+
+                // Set the baseURL to the current request's Scheme and Host
+                $this->baseURL = $request->getSchemeAndHttpHost();
+            }
+            // Always finish with a slash
+            $this->baseURL = rtrim($this->baseURL,"/")."/";
+        }
+    }
+
+    private function getDescription()
+    {
+        if($this->getMeta('name', 'description'))
+        {
+            return $this->getMeta('name', 'description')[1];
+        }
+        elseif($this->SonataSeoPage->hasMeta('name', 'description'))
+        {
+            return $this->SonataSeoPage->metas['name']['description'][0];
+        }
+        else{
+            return '';
+        }
     }
 }
