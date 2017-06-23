@@ -19,31 +19,27 @@ class BaseExtension extends SeoExtension
     protected $BWBase;
 
     /**
-     * @param BWBaseInterface $page
+     * BaseExtension constructor.
+     * @param SeoPageInterface $page
      * @param string $encoding
      * @param BWBaseInterface $BWBase
-    */
-  public function __construct(SeoPageInterface $page, string $encoding, BWBaseInterface $BWBase){
+     */
+    public function __construct(SeoPageInterface $page, $encoding, BWBaseInterface $BWBase)
+    {
         $this->page = $page;
         $this->encoding = $encoding;
         $this->BWBase = $BWBase;
-  }
+    }
 
-  public function getFunctions()
+    public function getFunctions()
     {
         $parentFunctions = parent::getFunctions();
-        return array_merge($parentFunctions,array(
-            new \Twig_SimpleFunction('bwbase_links', array($this, 'getLinks'), [
-                'is_safe' => ['html']
-            ]),
+        return array_merge($parentFunctions, array(
             new \Twig_SimpleFunction('bwbase_link_tags', array($this, 'getLinkTags'), [
                 'is_safe' => ['html']
             ]),
-            new \Twig_SimpleFunction('bwbase_sdks', array($this, 'getSDKs'), [
-                'is_safe' => ['html']
-            ]),
             new \Twig_SimpleFunction('bwbase_sdks_html', array($this, 'getSDKHtml'), [
-                'is_safe'           => ['html'],
+                'is_safe' => ['html'],
                 'needs_environment' => true
             ]),
             new \Twig_SimpleFunction('bwbase_meta_tags', array($this, 'getMetaTags'), [
@@ -54,7 +50,25 @@ class BaseExtension extends SeoExtension
             ]),
             new \Twig_SimpleFunction('bwbase_title', array($this, 'getPlainTitle'), [
                 'is_safe' => ['html']
-            ])
+            ]),
+
+            new \Twig_SimpleFunction('bwbase_links', array($this->BWBase, 'getLinks')),
+            new \Twig_SimpleFunction('bwbase_sdks', array($this->BWBase, 'getSDKs')),
+            new \Twig_SimpleFunction('bwbase_prccess_auto_content', array($this->BWBase, 'processAutoContent')),
+            new \Twig_SimpleFunction('bwbase_add_meta', array($this->BWBase, 'addMeta')),
+            new \Twig_SimpleFunction('bwbase_remove_meta', array($this->BWBase, 'removeMeta')),
+            new \Twig_SimpleFunction('bwbase_replace_meta', array($this->BWBase, 'replaceMeta')),
+            new \Twig_SimpleFunction('bwbase_remove_meta_by_key', array($this->BWBase, 'removeMetaByKey')),
+            new \Twig_SimpleFunction('bwbase_set_sdks', array($this->BWBase, 'setSDKs')),
+            new \Twig_SimpleFunction('bwbase_has_sdk', array($this->BWBase, 'hasSDK')),
+            new \Twig_SimpleFunction('bwbase_get_sdk', array($this->BWBase, 'getSDK')),
+            new \Twig_SimpleFunction('bwbase_enable_sdk', array($this->BWBase, 'enableSDK')),
+            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'disableSDK')),
+            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'setLinks')),
+            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'hasLink')),
+            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'addLink')),
+            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'removeLink')),
+            new \Twig_SimpleFunction('bwbase_get_url', array($this->BWBase, 'getUrl'))
         ));
     }
 
@@ -66,36 +80,20 @@ class BaseExtension extends SeoExtension
     /**
      * @return array
      */
-    public function getLinks()
-    {
-        return $this->BWBase->getLinks();
-    }
-
-    /**
-     * @return array
-     */
-    public function getSDKs(string $pagePart = null)
-    {
-        return $this->BWBase->getSDKs($pagePart);
-    }
-
-    /**
-     * @return array
-     */
     public function getMetas()
     {
-        $BWBaseMetas = $this->BWBase->getMetas();
         $sonataSeoMetas = $this->page->getMetas();
-        if($sonataSeoMetas) {
-            foreach ($sonataSeoMetas as $type => $metas) {
-                if (!isset($BWBaseMetas[$type])) {
-                    $BWBaseMetas[$type] = [];
-                }
-                foreach ((array)$metas as $name => $meta) {
-                    $BWBaseMetas[$type][] = array($name, $meta[0], $meta[1]);
-                }
+        $BWBaseMetas = $this->BWBase->getMetas();
+        foreach ($sonataSeoMetas as $type => $metas) {
+            if (!isset($BWBaseMetas[$type])) {
+                $BWBaseMetas[$type] = [];
+            }
+
+            foreach ((array)$metas as $name => $meta) {
+                $BWBaseMetas[$type][] = array($name, $meta[0], $meta[1]);
             }
         }
+
         return $BWBaseMetas;
     }
 
@@ -105,30 +103,29 @@ class BaseExtension extends SeoExtension
     public function getLinkTags()
     {
         $html = '';
-        if($this->getLinks()) {
-            foreach ($this->getLinks() as $type => $links) {
-                foreach ((array)$links as $name => $linksSet) {
-                    //list($content, $extras) = $link;
-                    foreach ($linksSet as $link) {
-                        $sprintfArr = array(
-                            $this->normalize($type),
-                            $this->normalize($name)
-                        );
-                        $sprintfArgs = str_repeat(" %s=\"%s\"", sizeof($link));
-                        foreach ($link as $attr => $val) {
-                            $sprintfArr[] = $this->normalize($attr);
-                            if ($attr === 'href') {
-                                $val = $this->BWBase->getUrl($val);
-                            }
-                            $sprintfArr[] = $this->normalize($val);
+        foreach ($this->BWBase->getLinks() as $type => $links) {
+            foreach ((array)$links as $name => $linksSet) {
+                //list($content, $extras) = $link;
+                foreach ($linksSet as $link) {
+                    $sprintfArr = array(
+                        $this->normalize($type),
+                        $this->normalize($name)
+                    );
+                    $sprintfArgs = str_repeat(" %s=\"%s\"", sizeof($link));
+                    foreach ($link as $attr => $val) {
+                        $sprintfArr[] = $this->normalize($attr);
+                        if ($attr === 'href') {
+                            $val = $this->BWBase->getUrl($val);
                         }
-
-                        $html .= '<link '.vsprintf('%s="%s" '.$sprintfArgs, $sprintfArr).' />';
+                        $sprintfArr[] = $this->normalize($val);
                     }
 
+                    $html .= "<link ".vsprintf("%s=\"%s\"", $sprintfArr)." $sprintfArgs />\n";
                 }
+
             }
         }
+
         return $html;
     }
 
@@ -138,46 +135,46 @@ class BaseExtension extends SeoExtension
     public function getSDKHtml(\Twig_Environment $environment, string $pageSection)
     {
         $html = "";
-        foreach ($this->getSDKs($pageSection) as $sdkName => $sdkInfo) {
-            switch($sdkName){
+        foreach ($this->BWBase->getSDKs($pageSection) as $sdkName => $sdkInfo) {
+            switch ($sdkName) {
                 case "twitter":
                     $html .= $environment->render('@BWBase/Block/_twitter_sdk.html.twig', []);
-                break;
+                    break;
 
                 case "facebook":
                     $js_script = $sdkInfo['debug'] ? 'debug.js' : 'sdk.js';
-                    $html .= $environment->render('@BWBase/Block/_facebook_sdk.html.twig',[
-                        'app_id' =>  $sdkInfo['app_id'],
+                    $html .= $environment->render('@BWBase/Block/_facebook_sdk.html.twig', [
+                        'app_id' => $sdkInfo['app_id'],
                         'xfbml' => $sdkInfo['xfbml'],
                         'version' => $sdkInfo['version'],
                         'status' => $sdkInfo['login_status_check'] ? "true" : "false",
                         'language' => $sdkInfo['language'],
                         'js_script' => $js_script
                     ]);
-                break;
+                    break;
 
                 case "google_analytics":
                     $html .= $environment->render('@BWBase/Block/_google_analytics_sdk.html.twig', [
                         'id' => $sdkInfo['id'],
                         'domain' => $sdkInfo['domain']
                     ]);
-                break;
+                    break;
 
                 case "woopra":
                     $html .= $environment->render('@BWBase/Block/_woopra_sdk.html.twig', [
                         'domain' => $sdkInfo['domain']
                     ]);
-                break;
-                
+                    break;
+
                 case "facebook_pixel":
                     $html .= $environment->render('@BWBase/Block/_facebook_pixel_sdk.html.twig', [
                         'id' => $sdkInfo['id']
                     ]);
-                break;
+                    break;
 
                 default:
-                    $html .= '<script>console.warn("'.$sdkName.' has no code configured for the twig extension `BaseExtension` using getSDKs");</script>';
-                break;
+                    $html .= '<script>console.warn("' . $sdkName . ' has no code configured for the twig extension `BaseExtension` using getSDKs");</script>';
+                    break;
             }
         }
         return $html;
@@ -193,36 +190,38 @@ class BaseExtension extends SeoExtension
         $allMetas = $this->getMetas();
         $html = '';
         foreach ($allMetas as $type => $metas) {
-            foreach ((array) $metas as $key => $meta) {
+            foreach ((array)$metas as $key => $meta) {
                 // Support Sonata SEO which has 2 items in array - only 1 twig function to call then for all meta tags
-                if( sizeof($meta) === 2 )
-                {
+                if (sizeof($meta) === 2) {
                     $name = $key;
                     list($content) = $meta;
-                }
-                else
-                {
+                } else {
                     list($name, $content) = $meta;
                 }
 
-                foreach($assetPostfixes as $assetPostfix){
-                    if( substr($name, strlen($assetPostfix)*-1) === $assetPostfix ){
+                if (!is_string($content)) {
+                    dump($meta);
+                    die(dump($content));
+                }
+
+                foreach ($assetPostfixes as $assetPostfix) {
+                    if (substr($name, strlen($assetPostfix) * -1) === $assetPostfix) {
                         $content = $this->BWBase->getUrl($content);
                         break;
                     }
                 }
 
                 if (!empty($content)) {
-                    $html .= '<meta '.sprintf('%s="%s" content="%s"',
+                    $html .= "<meta ".sprintf("%s=\"%s\" content=\"%s\"",
                         $type,
                         $this->normalize($name),
                         $this->normalize($content)
-                    ).' />';
+                    )." />\n";
                 } else {
-                    $html .= '<meta '.sprintf('%s="%s"',
+                    $html .= "<meta ".sprintf("%s=\"%s\"",
                         $type,
                         $this->normalize($name)
-                    ).' />';
+                    )." />\n";
                 }
             }
         }
@@ -235,10 +234,11 @@ class BaseExtension extends SeoExtension
      *
      * @return mixed
      */
-    private function normalize($string)
+    private function normalize(string $string)
     {
         return htmlentities(strip_tags($string), ENT_QUOTES, $this->encoding);
     }
+
 
     /**
      * @return string

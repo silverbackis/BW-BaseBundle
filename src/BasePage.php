@@ -3,7 +3,6 @@
 namespace BW\BaseBundle;
 
 use Sonata\SeoBundle\Seo\SeoPage;
-
 use Symfony\Component\Asset\Packages;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Asset\PackageInterface;
@@ -45,16 +44,21 @@ class BasePage extends SeoPage implements BWBaseInterface
         ]
     ];
 
+    private $autometas = [];
+
     public function __construct(SeoPage $SonataSeoPage, RequestStack $requestStack, Packages $packages){
         $this->SonataSeoPage = $SonataSeoPage;
+        /**
+         * @var PackageInterface
+         */
         $this->defaultPackage = $packages->getPackage();
         $this->requestStack = $requestStack;
     }
-	/**
+    /**
      * @var array
      */
     protected $links,
-    $sdks;
+        $sdks;
 
     /**
      * {@inheritdoc}
@@ -93,29 +97,35 @@ class BasePage extends SeoPage implements BWBaseInterface
         {
             return;
         }
-        foreach( $this->metas as $type=>&$metaArr)
+        foreach( $this->metas as $type=>&$metaArr )
         {
-            if( self::AUTOMETAS[$type] ) {
-                //ie($type.var_dump($metaArr));
-                foreach ($metaArr as &$metaInfo) {
-                    $name = $metaInfo[0];
-                    $content = $metaInfo[1];
+            //ie($type.var_dump($metaArr));
+            foreach($metaArr as &$metaInfo)
+            {
+                $name = $metaInfo[0];
+                $content = $metaInfo[1];
 
-                    if ( in_array($name, self::AUTOMETAS[$type]) && $content === 'auto' ) {
-                        $chk_title = ':title';
-                        $chk_description = ':description';
-                        $chk_url = ':url';
-                        if (substr($name, strlen($chk_title) * -1) === $chk_title) {
-                            $content = $this->SonataSeoPage->getTitle();
-                        } elseif (substr($name, strlen($chk_description) * -1) === $chk_description) {
-                            $metaDesc = $this->getMeta('name', 'description') ?: ($this->SonataSeoPage->hasMeta('name', 'description') ? $this->SonataSeoPage->metas['name']['description'][0] : '');
-                            $content = $metaDesc;
-                        } elseif (substr($name, strlen($chk_url) * -1) === $chk_url) {
-                            $request = $this->requestStack->getCurrentRequest();
-                            $content = $request ? $request->getUri() : 'http://localhost/';
-                        }
-                        $metaInfo = [$name, $content, []];
+                if( isset(self::AUTOMETAS[$type]) && in_array($name, self::AUTOMETAS[$type]) && ($content === 'auto' || in_array($type, $this->autometas)) )
+                {
+                    $this->autometas[] = $type;
+
+                    $chk_title = ':title';
+                    $chk_description = ':description';
+                    $chk_url = ':url';
+                    if( substr($name, strlen($chk_title)*-1) === $chk_title )
+                    {
+                        $content = $this->SonataSeoPage->getTitle();
                     }
+                    elseif( substr($name, strlen($chk_description)*-1) === $chk_description )
+                    {
+                        $content = $this->getDescription();
+                    }
+                    elseif( substr($name, strlen($chk_url)*-1) === $chk_url )
+                    {
+                        $request = $this->requestStack->getCurrentRequest();
+                        $content = $request ? $request->getUri() : 'http://localhost/';
+                    }
+                    $metaInfo = [$name, $content, []];
                 }
             }
         }
@@ -129,8 +139,9 @@ class BasePage extends SeoPage implements BWBaseInterface
         if (!isset($this->metas[$type])) {
             $this->metas[$type] = array();
         }
-        if( self::AUTOMETAS[$type] && in_array($name, self::AUTOMETAS[$type]) && $content === 'auto' )
+        if( isset(self::AUTOMETAS[$type]) && in_array($name, self::AUTOMETAS[$type]) && ($content === 'auto' || in_array($type, $this->autometas)) )
         {
+            $this->autometas[] = $type;
             $chk_title = ':title';
             $chk_description = ':description';
             $chk_url = ':url';
@@ -140,8 +151,7 @@ class BasePage extends SeoPage implements BWBaseInterface
             }
             elseif( substr($name, strlen($chk_description)*-1) === $chk_description )
             {
-                $metaDesc = $this->getMeta('name', 'description') ?: ($this->SonataSeoPage->hasMeta('name', 'description') ? $this->SonataSeoPage->metas['name']['description'][0] : '');
-                $content = $metaDesc;
+                $content = $this->getDescription();
             }
             elseif( substr($name, strlen($chk_url)*-1) === $chk_url )
             {
@@ -151,8 +161,6 @@ class BasePage extends SeoPage implements BWBaseInterface
         }
 
         $this->metas[$type][] = array($name, $content, $extras);
-
-        return $this;
     }
 
     /**
@@ -196,8 +204,6 @@ class BasePage extends SeoPage implements BWBaseInterface
     /**
      * @param string $type
      * @param string $name
-     *
-     * @return $this
      */
     public function removeMeta($type, $name)
     {
@@ -208,19 +214,24 @@ class BasePage extends SeoPage implements BWBaseInterface
                 unset($this->metas[$type][$key]);
             }
         }
-        return $this;
+    }
+
+    public function replaceMeta($type, $name, $content, array $extras = array())
+    {
+        if($this->hasMeta($type, $name))
+        {
+            $this->removeMeta($type, $name);
+        }
+        $this->addMeta($type, $name, $content, $extras);
     }
 
     /**
      * @param string $type
      * @param integer $key
-     *
-     * @return $this
      */
     public function removeMetaByKey($type, $key)
     {
         unset($this->metas[$type][$key]);
-        return $this;
     }
 
     /**
@@ -229,16 +240,16 @@ class BasePage extends SeoPage implements BWBaseInterface
     public function setSDKs(array $sdks)
     {
         $this->sdks = $sdks;
-        return $this;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getSDKs( string $pagePart = null )
+    public function getSDKs(string $bodyPart=null)
     {
-        return !$this->sdks ? [] : array_filter($this->sdks, function($arr) use ($pagePart){
-            return $arr['enabled'] && (null === $pagePart || ($arr['head'] ? 'head' : 'body') === $pagePart );
+        return array_filter($this->sdks,function($arr) use ($bodyPart){
+            $matchPart = $arr['head'] ? 'head' : 'body';
+            return $arr['enabled'] && (null === $bodyPart || $bodyPart === $matchPart);
         });
     }
 
@@ -268,24 +279,18 @@ class BasePage extends SeoPage implements BWBaseInterface
     public function enableSDK($name)
     {
         if (!isset($this->sdks[$name])) {
-            return $this;
+            return;
         }
 
         $this->sdks[$name]['enabled'] = true;
-
-        return $this;
     }
 
     /**
      * @param string $name
-     *
-     * @return $this
      */
     public function disableSDK($name)
     {
         $this->sdks[$name]['enabled'] = false;
-
-        return $this;
     }
 
     /**
@@ -303,7 +308,6 @@ class BasePage extends SeoPage implements BWBaseInterface
                 $this->addLink($type, $name, $link);
             }
         }
-        return $this;
     }
 
     /**
@@ -335,21 +339,15 @@ class BasePage extends SeoPage implements BWBaseInterface
         }
 
         $this->links[$type][$name] = $content;
-
-        return $this;
     }
 
     /**
      * @param string $type
      * @param string $name
-     *
-     * @return $this
      */
     public function removeLink($type, $name)
     {
         unset($this->links[$type][$name]);
-
-        return $this;
     }
 
     /**
@@ -371,7 +369,6 @@ class BasePage extends SeoPage implements BWBaseInterface
 
     /**
      * Sets $this->baseURL - either the specified base_url for assets or the current http scheme, host and port
-     * @return $this
      */
     private function setBaseUrl()
     {
@@ -394,6 +391,20 @@ class BasePage extends SeoPage implements BWBaseInterface
             // Always finish with a slash
             $this->baseURL = rtrim($this->baseURL,"/")."/";
         }
-        return $this;
+    }
+
+    private function getDescription()
+    {
+        if($this->getMeta('name', 'description'))
+        {
+            return $this->getMeta('name', 'description')[1];
+        }
+        elseif($this->SonataSeoPage->hasMeta('name', 'description'))
+        {
+            return $this->SonataSeoPage->metas['name']['description'][0];
+        }
+        else{
+            return '';
+        }
     }
 }
