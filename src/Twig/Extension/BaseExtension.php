@@ -110,7 +110,7 @@ class BaseExtension extends SeoExtension
                         $this->normalize($type),
                         $this->normalize($name)
                     );
-                    $sprintfArgs = str_repeat(" %s=\"%s\"", sizeof($link));
+                    $sprintfArgs = str_repeat(" %s=\"%s\"", sizeof($link)+1);
                     foreach ($link as $attr => $val) {
                         $sprintfArr[] = $this->normalize($attr);
                         if ($attr === 'href') {
