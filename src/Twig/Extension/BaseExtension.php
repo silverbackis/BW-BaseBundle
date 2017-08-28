@@ -105,7 +105,6 @@ class BaseExtension extends SeoExtension
         $html = '';
         foreach ($this->BWBase->getLinks() as $type => $links) {
             foreach ((array)$links as $name => $linksSet) {
-                //list($content, $extras) = $link;
                 foreach ($linksSet as $link) {
                     $sprintfArr = array(
                         $this->normalize($type),
@@ -119,10 +118,8 @@ class BaseExtension extends SeoExtension
                         }
                         $sprintfArr[] = $this->normalize($val);
                     }
-
-                    $html .= "<link ".vsprintf("%s=\"%s\"", $sprintfArr)." $sprintfArgs />\n";
+                    $html .= "<link ".vsprintf($sprintfArgs, $sprintfArr)." />\n";
                 }
-
             }
         }
 
