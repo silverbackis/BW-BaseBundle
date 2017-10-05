@@ -153,7 +153,8 @@ class BaseExtension extends SeoExtension
                 case "google_analytics":
                     $html .= $environment->render('@BWBase/Block/_google_analytics_sdk.html.twig', [
                         'id' => $sdkInfo['id'],
-                        'domain' => $sdkInfo['domain']
+                        'domain' => $sdkInfo['domain'],
+                        'debug' => $sdkInfo['debug']
                     ]);
                     break;
 

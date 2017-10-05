@@ -69,6 +69,9 @@ class Configuration implements ConfigurationInterface
                                         ->scalarNode('domain')
                                             ->defaultValue('auto')
                                         ->end()
+                                        ->booleanNode('debug')
+                                            ->defaultFalse()
+                                        ->end()
                                     ->end()
                                 ->end()
 
