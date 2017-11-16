@@ -21,12 +21,5 @@
         "psr-4": {
             "BW\\BaseBundle\\Tests\\": "Tests/"
         }
-    },
-    "require": {
-        "symfony/symfony": "3.*|^4.0",
-        "sonata-project/seo-bundle" : "^2.0"
-    },
-    "require-dev": {
-        "symfony/phpunit-bridge": "^3.0"
     }
 }
