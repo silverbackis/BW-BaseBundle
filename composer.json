@@ -23,7 +23,7 @@
         }
     },
     "require": {
-        "symfony/symfony": "^3.2",
+        "symfony/symfony": "3.*|^4.0",
         "sonata-project/seo-bundle" : "^2.0"
     },
     "require-dev": {
