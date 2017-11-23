@@ -7,7 +7,7 @@
     })(window,document,'script','https://www.google-analytics.com/analytics{{ debug ? '_debug' : '' }}.js','ga');
 
     ga('create', '{{ id }}', '{{ domain }}');
-    {% block before_pageview %}{% endblock %}
+    {{ google_js_before_pageview|default('') }}
     ga('send', 'pageview');
   </script>
 {% endspaceless %}
