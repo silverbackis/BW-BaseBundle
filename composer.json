@@ -12,6 +12,10 @@
             "homepage": "https://silverback.is"
         }
     ],
+    "require": {
+        "php": "^7.0",
+        "sonata-project/seo-bundle": "^2.3"
+    },
     "autoload": {
         "psr-4": {
             "BW\\BaseBundle\\": "src/"

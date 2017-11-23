@@ -51,7 +51,6 @@ class BaseExtension extends SeoExtension
             new \Twig_SimpleFunction('bwbase_title', array($this, 'getPlainTitle'), [
                 'is_safe' => ['html']
             ]),
-
             new \Twig_SimpleFunction('bwbase_links', array($this->BWBase, 'getLinks')),
             new \Twig_SimpleFunction('bwbase_sdks', array($this->BWBase, 'getSDKs')),
             new \Twig_SimpleFunction('bwbase_prccess_auto_content', array($this->BWBase, 'processAutoContent')),
@@ -64,10 +63,10 @@ class BaseExtension extends SeoExtension
             new \Twig_SimpleFunction('bwbase_get_sdk', array($this->BWBase, 'getSDK')),
             new \Twig_SimpleFunction('bwbase_enable_sdk', array($this->BWBase, 'enableSDK')),
             new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'disableSDK')),
-            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'setLinks')),
-            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'hasLink')),
-            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'addLink')),
-            new \Twig_SimpleFunction('bwbase_disable_sdk', array($this->BWBase, 'removeLink')),
+            new \Twig_SimpleFunction('bwbase_set_links', array($this->BWBase, 'setLinks')),
+            new \Twig_SimpleFunction('bwbase_has_link', array($this->BWBase, 'hasLink')),
+            new \Twig_SimpleFunction('bwbase_add_link', array($this->BWBase, 'addLink')),
+            new \Twig_SimpleFunction('bwbase_remove_link', array($this->BWBase, 'removeLink')),
             new \Twig_SimpleFunction('bwbase_get_url', array($this->BWBase, 'getUrl'))
         ));
     }
