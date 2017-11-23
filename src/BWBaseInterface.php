@@ -12,6 +12,8 @@ interface BWBaseInterface extends SeoPageInterface
      */
     public function getSDKs(string $pagePart = null);
 
+    public function getAllSDKs();
+
     /**
      * @param array $sdks
      *

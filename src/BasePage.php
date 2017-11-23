@@ -253,6 +253,11 @@ class BasePage extends SeoPage implements BWBaseInterface
         }) : [];
     }
 
+    public function getAllSDKs()
+    {
+        return $this->sdks ?: [];
+    }
+
     /**
      * @param string $name
      *

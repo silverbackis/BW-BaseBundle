@@ -129,7 +129,7 @@ class BaseExtension extends SeoExtension
 
     public function getSdkInfo(string $sdkName, string $var)
     {
-        $allInfo = $this->BWBase->getSDKs('all');
+        $allInfo = $this->BWBase->getAllSDKs();
         return $allInfo[$sdkName][$var];
     }
 
