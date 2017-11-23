@@ -68,7 +68,7 @@ class BaseExtension extends SeoExtension
             new \Twig_SimpleFunction('bwbase_add_link', array($this->BWBase, 'addLink')),
             new \Twig_SimpleFunction('bwbase_remove_link', array($this->BWBase, 'removeLink')),
             new \Twig_SimpleFunction('bwbase_get_url', array($this->BWBase, 'getUrl')),
-            new \Twig_SimpleFunction('bwbase_get_sdk_info', array($this->BWBase, 'getSdkInfo'))
+            new \Twig_SimpleFunction('bwbase_get_sdk_info', array($this, 'getSdkInfo'))
         ));
     }
 
@@ -103,26 +103,27 @@ class BaseExtension extends SeoExtension
     public function getLinkTags()
     {
         $html = '';
-        foreach ($this->BWBase->getLinks() as $type => $links) {
-            foreach ((array)$links as $name => $linksSet) {
-                foreach ($linksSet as $link) {
-                    $sprintfArr = array(
-                        $this->normalize($type),
-                        $this->normalize($name)
-                    );
-                    $sprintfArgs = str_repeat(" %s=\"%s\"", sizeof($link)+1);
-                    foreach ($link as $attr => $val) {
-                        $sprintfArr[] = $this->normalize($attr);
-                        if ($attr === 'href') {
-                            $val = $this->BWBase->getUrl($val);
+        if ($this->BWBase->getLinks()) {
+            foreach ($this->BWBase->getLinks() as $type => $links) {
+                foreach ((array)$links as $name => $linksSet) {
+                    foreach ($linksSet as $link) {
+                        $sprintfArr = array(
+                            $this->normalize($type),
+                            $this->normalize($name)
+                        );
+                        $sprintfArgs = str_repeat(" %s=\"%s\"", sizeof($link)+1);
+                        foreach ($link as $attr => $val) {
+                            $sprintfArr[] = $this->normalize($attr);
+                            if ($attr === 'href') {
+                                $val = $this->BWBase->getUrl($val);
+                            }
+                            $sprintfArr[] = $this->normalize($val);
                         }
-                        $sprintfArr[] = $this->normalize($val);
+                        $html .= "<link ".vsprintf($sprintfArgs, $sprintfArr)." />\n";
                     }
-                    $html .= "<link ".vsprintf($sprintfArgs, $sprintfArr)." />\n";
                 }
             }
         }
-
         return $html;
     }
 

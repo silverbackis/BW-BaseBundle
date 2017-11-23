@@ -247,10 +247,10 @@ class BasePage extends SeoPage implements BWBaseInterface
      */
     public function getSDKs(string $bodyPart=null)
     {
-        return array_filter($this->sdks,function($arr) use ($bodyPart){
+        return $this->sdks ? array_filter($this->sdks,function($arr) use ($bodyPart){
             $matchPart = $arr['head'] ? 'head' : 'body';
             return $arr['enabled'] && (null === $bodyPart || $bodyPart === $matchPart);
-        });
+        }) : [];
     }
 
     /**
