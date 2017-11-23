@@ -67,7 +67,8 @@ class BaseExtension extends SeoExtension
             new \Twig_SimpleFunction('bwbase_has_link', array($this->BWBase, 'hasLink')),
             new \Twig_SimpleFunction('bwbase_add_link', array($this->BWBase, 'addLink')),
             new \Twig_SimpleFunction('bwbase_remove_link', array($this->BWBase, 'removeLink')),
-            new \Twig_SimpleFunction('bwbase_get_url', array($this->BWBase, 'getUrl'))
+            new \Twig_SimpleFunction('bwbase_get_url', array($this->BWBase, 'getUrl')),
+            new \Twig_SimpleFunction('bwbase_get_sdk_info', array($this->BWBase, 'getSdkInfo'))
         ));
     }
 
@@ -123,6 +124,12 @@ class BaseExtension extends SeoExtension
         }
 
         return $html;
+    }
+
+    public function getSdkInfo(string $sdkName, string $var)
+    {
+        $allInfo = $this->BWBase->getSDKs('all');
+        return $allInfo[$sdkName][$var];
     }
 
     /**
